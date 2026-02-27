@@ -1,14 +1,8 @@
 /**
- * Calculate each person's share of the bill
- * @param {Array} items - [{id, name, price}]
- * @param {Array} people - ['Alice', 'Bob', ...]
- * @param {Object} assignments - {itemId: [personIndex, ...]}
- * @param {number} tax - Total tax amount
- * @param {number} tip - Total tip amount
- * @returns {Array} Per-person breakdown
+ * Calculate each person's share of the bill.
+ * people is an array of { name, venmo } objects.
  */
 export function calculateSplit(items, people, assignments, tax, tip) {
-  // Calculate each person's item subtotal
   const personSubtotals = new Array(people.length).fill(0);
 
   items.forEach(item => {
@@ -25,14 +19,16 @@ export function calculateSplit(items, people, assignments, tax, tip) {
 
   const totalSubtotal = personSubtotals.reduce((sum, s) => sum + s, 0);
 
-  return people.map((name, idx) => {
+  return people.map((person, idx) => {
+    const name = typeof person === 'string' ? person : (person.name || '');
+    const venmo = typeof person === 'string' ? '' : (person.venmo || '');
+
     const itemSubtotal = personSubtotals[idx];
     const ratio = totalSubtotal > 0 ? itemSubtotal / totalSubtotal : 1 / people.length;
     const personTax = (tax || 0) * ratio;
     const personTip = (tip || 0) * ratio;
     const total = itemSubtotal + personTax + personTip;
 
-    // Build list of items this person is responsible for
     const personItems = items
       .filter(item => (assignments[item.id] || []).includes(idx))
       .map(item => {
@@ -48,6 +44,7 @@ export function calculateSplit(items, people, assignments, tax, tip) {
 
     return {
       name,
+      venmo,
       index: idx,
       items: personItems,
       itemSubtotal,

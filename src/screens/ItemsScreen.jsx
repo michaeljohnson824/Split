@@ -1,13 +1,32 @@
-import { useRef } from 'react'
+import { useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 
-function ItemRow({ item, onUpdate, onRemove }) {
+/**
+ * ItemRow — shows one line item with inline editing + an expand/split panel.
+ * Auto-detects a leading quantity number (e.g. "3 Margarita") and pre-fills
+ * the expand quantity with that number.
+ */
+function ItemRow({ item, onUpdate, onRemove, onExpand }) {
+  const [expandOpen, setExpandOpen] = useState(false);
+  const [expandQty, setExpandQty] = useState(() => {
+    const match = item.name.match(/^(\d+)\s+/);
+    return match ? Math.max(2, parseInt(match[1])) : 2;
+  });
+
+  const handleExpand = () => {
+    onExpand(item.id, expandQty);
+    setExpandOpen(false);
+  };
+
   return (
-    <div className={`bg-white rounded-2xl p-4 border ${item.flagged ? 'border-amber-200 bg-amber-50/30' : 'border-gray-100'} shadow-sm`}>
+    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+      item.flagged ? 'border-amber-200 bg-amber-50/20' : 'border-gray-100'
+    }`}>
+      {/* Flagged warning */}
       {item.flagged && (
-        <div className="flex items-center gap-1.5 mb-2.5">
-          <svg width="14" height="14" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="flex items-center gap-1.5 px-4 pt-3 pb-0">
+          <svg width="13" height="13" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
             <line x1="12" y1="9" x2="12" y2="13" />
             <line x1="12" y1="17" x2="12.01" y2="17" />
@@ -15,7 +34,9 @@ function ItemRow({ item, onUpdate, onRemove }) {
           <span className="text-xs font-medium text-amber-600">Please verify — may be inaccurate</span>
         </div>
       )}
-      <div className="flex items-center gap-3">
+
+      {/* Main row: name | price | delete */}
+      <div className="flex items-center gap-3 px-4 py-3">
         <input
           type="text"
           value={item.name}
@@ -37,14 +58,59 @@ function ItemRow({ item, onUpdate, onRemove }) {
         </div>
         <button
           onClick={() => onRemove(item.id)}
-          className="w-7 h-7 flex items-center justify-center text-gray-300 active:text-red-400 transition-colors ml-1"
+          className="w-7 h-7 flex items-center justify-center text-gray-300 active:text-red-400 transition-colors ml-1 shrink-0"
         >
-          <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
       </div>
+
+      {/* Expand/split toggle link */}
+      {!expandOpen ? (
+        <button
+          onClick={() => setExpandOpen(true)}
+          className="w-full px-4 pb-2.5 text-left text-xs text-indigo-400 font-medium active:text-indigo-600 flex items-center gap-1.5"
+        >
+          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+          Split into individual items (e.g. "3 Margaritas")
+        </button>
+      ) : (
+        <div className="px-4 pb-3 pt-1 border-t border-gray-50 bg-indigo-50/40">
+          <p className="text-xs text-gray-500 mb-2">Expand into equal-priced items:</p>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setExpandQty(q => Math.max(2, q - 1))}
+              className="w-8 h-8 bg-white border border-gray-200 rounded-lg font-bold text-gray-700 active:bg-gray-100 text-lg leading-none flex items-center justify-center"
+            >−</button>
+            <span className="w-8 text-center font-bold text-gray-900">{expandQty}</span>
+            <button
+              onClick={() => setExpandQty(q => Math.min(20, q + 1))}
+              className="w-8 h-8 bg-white border border-gray-200 rounded-lg font-bold text-gray-700 active:bg-gray-100 text-lg leading-none flex items-center justify-center"
+            >+</button>
+            <span className="text-xs text-gray-400 flex-1">
+              × ${((parseFloat(item.price) || 0) / expandQty).toFixed(2)} each
+            </span>
+            <button
+              onClick={handleExpand}
+              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg active:bg-indigo-700"
+            >
+              Split
+            </button>
+            <button
+              onClick={() => setExpandOpen(false)}
+              className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium rounded-lg active:bg-gray-50"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -58,7 +124,6 @@ function TotalsSection({ subtotal, setSubtotal, tax, setTax, tip, setTip, comput
         <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Totals</h3>
       </div>
 
-      {/* Subtotal (computed or editable) */}
       <div className="flex items-center px-4 py-3 border-b border-gray-50">
         <span className="flex-1 text-sm text-gray-600">Subtotal</span>
         {subIsComputed ? (
@@ -82,7 +147,6 @@ function TotalsSection({ subtotal, setSubtotal, tax, setTax, tip, setTip, comput
         )}
       </div>
 
-      {/* Tax */}
       <div className="flex items-center px-4 py-3 border-b border-gray-50">
         <span className="flex-1 text-sm text-gray-600">Tax</span>
         <div className="flex items-center gap-1">
@@ -99,7 +163,6 @@ function TotalsSection({ subtotal, setSubtotal, tax, setTax, tip, setTip, comput
         </div>
       </div>
 
-      {/* Tip */}
       <div className="px-4 py-3">
         <div className="flex items-center">
           <span className="flex-1 text-sm text-gray-600">Tip</span>
@@ -116,28 +179,22 @@ function TotalsSection({ subtotal, setSubtotal, tax, setTax, tip, setTip, comput
             />
           </div>
         </div>
-
-        {/* Quick tip buttons */}
         {!tip && (
           <div className="mt-3 flex gap-2">
             <span className="text-xs text-gray-400 self-center">Quick:</span>
-            {[15, 18, 20, 22].map(pct => {
-              const tipAmount = (computedSubtotal * pct / 100).toFixed(2);
-              return (
-                <button
-                  key={pct}
-                  onClick={() => setTip(tipAmount)}
-                  className="flex-1 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg active:bg-indigo-100 transition-colors"
-                >
-                  {pct}%
-                </button>
-              );
-            })}
+            {[15, 18, 20, 22].map(pct => (
+              <button
+                key={pct}
+                onClick={() => setTip((computedSubtotal * pct / 100).toFixed(2))}
+                className="flex-1 py-1.5 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-lg active:bg-indigo-100 transition-colors"
+              >
+                {pct}%
+              </button>
+            ))}
           </div>
         )}
       </div>
 
-      {/* Grand total */}
       <div className="flex items-center px-4 py-3 bg-gray-50 border-t border-gray-100">
         <span className="flex-1 text-sm font-semibold text-gray-900">Total</span>
         <span className="text-base font-bold text-indigo-700">
@@ -148,10 +205,12 @@ function TotalsSection({ subtotal, setSubtotal, tax, setTax, tip, setTip, comput
   );
 }
 
-export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax, tip, setTip, addItem, updateItem, removeItem, onNext, onBack }) {
+export default function ItemsScreen({
+  items, subtotal, setSubtotal, tax, setTax, tip, setTip,
+  addItem, updateItem, removeItem, expandItem, onNext, onBack,
+}) {
   const computedSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   const flaggedCount = items.filter(i => i.flagged).length;
-
   const canProceed = items.length > 0 && items.every(i => i.name.trim() && parseFloat(i.price) >= 0);
 
   return (
@@ -173,7 +232,6 @@ export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax,
       />
 
       <div className="flex-1 px-4 py-4 space-y-3 max-w-lg mx-auto w-full pb-36">
-        {/* OCR flags warning */}
         {flaggedCount > 0 && (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex gap-3">
             <svg className="text-amber-500 shrink-0 mt-0.5" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -182,12 +240,11 @@ export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax,
               <line x1="12" y1="17" x2="12.01" y2="17" />
             </svg>
             <p className="text-sm text-amber-800">
-              <span className="font-semibold">{flaggedCount} item{flaggedCount > 1 ? 's' : ''}</span> may need review — please verify the highlighted items.
+              <span className="font-semibold">{flaggedCount} item{flaggedCount > 1 ? 's' : ''}</span> may need review.
             </p>
           </div>
         )}
 
-        {/* Items list */}
         {items.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -196,7 +253,7 @@ export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax,
               </svg>
             </div>
             <p className="text-gray-500 font-medium">No items yet</p>
-            <p className="text-gray-400 text-sm mt-1">Tap the + button to add items</p>
+            <p className="text-gray-400 text-sm mt-1">Tap + to add items</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -206,12 +263,12 @@ export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax,
                 item={item}
                 onUpdate={updateItem}
                 onRemove={removeItem}
+                onExpand={expandItem}
               />
             ))}
           </div>
         )}
 
-        {/* Add item button (inline) */}
         <button
           onClick={() => addItem()}
           className="w-full py-3 flex items-center justify-center gap-2 text-indigo-600 text-sm font-medium border-2 border-dashed border-indigo-200 rounded-2xl active:bg-indigo-50 transition-colors"
@@ -223,7 +280,6 @@ export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax,
           Add Item
         </button>
 
-        {/* Totals */}
         {items.length > 0 && (
           <TotalsSection
             subtotal={subtotal}
@@ -237,7 +293,6 @@ export default function ItemsScreen({ items, subtotal, setSubtotal, tax, setTax,
         )}
       </div>
 
-      {/* Next button */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-4 pb-safe">
         <Button onClick={onNext} disabled={!canProceed}>
           Continue — Add People
