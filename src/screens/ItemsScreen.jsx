@@ -1,29 +1,11 @@
-import { useState } from 'react'
 import Header from '../components/Header'
 import Button from '../components/Button'
 
-/**
- * ItemRow — shows one line item with inline editing + an expand/split panel.
- * Auto-detects a leading quantity number (e.g. "3 Margarita") and pre-fills
- * the expand quantity with that number.
- */
-function ItemRow({ item, onUpdate, onRemove, onExpand }) {
-  const [expandOpen, setExpandOpen] = useState(false);
-  const [expandQty, setExpandQty] = useState(() => {
-    const match = item.name.match(/^(\d+)\s+/);
-    return match ? Math.max(2, parseInt(match[1])) : 2;
-  });
-
-  const handleExpand = () => {
-    onExpand(item.id, expandQty);
-    setExpandOpen(false);
-  };
-
+function ItemRow({ item, onUpdate, onRemove }) {
   return (
-    <div className={`bg-white rounded-2xl border shadow-sm overflow-hidden ${
+    <div className={`bg-white rounded-2xl border shadow-sm ${
       item.flagged ? 'border-amber-200 bg-amber-50/20' : 'border-gray-100'
     }`}>
-      {/* Flagged warning */}
       {item.flagged && (
         <div className="flex items-center gap-1.5 px-4 pt-3 pb-0">
           <svg width="13" height="13" fill="none" stroke="#d97706" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -34,8 +16,6 @@ function ItemRow({ item, onUpdate, onRemove, onExpand }) {
           <span className="text-xs font-medium text-amber-600">Please verify — may be inaccurate</span>
         </div>
       )}
-
-      {/* Main row: name | price | delete */}
       <div className="flex items-center gap-3 px-4 py-3">
         <input
           type="text"
@@ -66,51 +46,6 @@ function ItemRow({ item, onUpdate, onRemove, onExpand }) {
           </svg>
         </button>
       </div>
-
-      {/* Expand/split toggle link */}
-      {!expandOpen ? (
-        <button
-          onClick={() => setExpandOpen(true)}
-          className="w-full px-4 pb-2.5 text-left text-xs text-indigo-400 font-medium active:text-indigo-600 flex items-center gap-1.5"
-        >
-          <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
-            <line x1="12" y1="8" x2="12" y2="16" />
-            <line x1="8" y1="12" x2="16" y2="12" />
-          </svg>
-          Split into individual items (e.g. "3 Margaritas")
-        </button>
-      ) : (
-        <div className="px-4 pb-3 pt-1 border-t border-gray-50 bg-indigo-50/40">
-          <p className="text-xs text-gray-500 mb-2">Expand into equal-priced items:</p>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setExpandQty(q => Math.max(2, q - 1))}
-              className="w-8 h-8 bg-white border border-gray-200 rounded-lg font-bold text-gray-700 active:bg-gray-100 text-lg leading-none flex items-center justify-center"
-            >−</button>
-            <span className="w-8 text-center font-bold text-gray-900">{expandQty}</span>
-            <button
-              onClick={() => setExpandQty(q => Math.min(20, q + 1))}
-              className="w-8 h-8 bg-white border border-gray-200 rounded-lg font-bold text-gray-700 active:bg-gray-100 text-lg leading-none flex items-center justify-center"
-            >+</button>
-            <span className="text-xs text-gray-400 flex-1">
-              × ${((parseFloat(item.price) || 0) / expandQty).toFixed(2)} each
-            </span>
-            <button
-              onClick={handleExpand}
-              className="px-3 py-1.5 bg-indigo-600 text-white text-xs font-semibold rounded-lg active:bg-indigo-700"
-            >
-              Split
-            </button>
-            <button
-              onClick={() => setExpandOpen(false)}
-              className="px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs font-medium rounded-lg active:bg-gray-50"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -207,7 +142,7 @@ function TotalsSection({ subtotal, setSubtotal, tax, setTax, tip, setTip, comput
 
 export default function ItemsScreen({
   items, subtotal, setSubtotal, tax, setTax, tip, setTip,
-  addItem, updateItem, removeItem, expandItem, onNext, onBack,
+  addItem, updateItem, removeItem, onNext, onBack,
 }) {
   const computedSubtotal = items.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
   const flaggedCount = items.filter(i => i.flagged).length;
@@ -263,7 +198,6 @@ export default function ItemsScreen({
                 item={item}
                 onUpdate={updateItem}
                 onRemove={removeItem}
-                onExpand={expandItem}
               />
             ))}
           </div>

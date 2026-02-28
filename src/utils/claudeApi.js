@@ -19,14 +19,27 @@ Required JSON structure:
   "flagged": ["list any item names or fields that were unclear or hard to read"]
 }
 
-Rules:
-- Include every line item from the receipt with its price
-- "subtotal" is the pre-tax total (calculate from items if not shown)
-- "tax" is the tax amount (not percentage) — set to 0 if not present
-- "tip" is the tip amount (not percentage) — set to null if not shown on receipt
-- "flagged" lists names of items or fields (subtotal/tax/tip) that were unclear
-- All prices must be numbers, not strings
-- If a price is illegible, use your best estimate and add the item to flagged`;
+CRITICAL RULES — read carefully:
+
+1. QUANTITIES: When a line item shows a quantity greater than 1, you MUST expand it into that many individual items, each at the per-unit price.
+   - "3 Margarita  $30.00"  → three items: [{"name":"Margarita","price":10.00}, {"name":"Margarita","price":10.00}, {"name":"Margarita","price":10.00}]
+   - "Burger x2  $28.00"    → two items:   [{"name":"Burger","price":14.00}, {"name":"Burger","price":14.00}]
+   - "2× Fish Tacos $18.00" → two items:   [{"name":"Fish Tacos","price":9.00}, {"name":"Fish Tacos","price":9.00}]
+   - "QTY 4 Soda $8.00"     → four items:  [{"name":"Soda","price":2.00}, ...]
+   - NEVER include the quantity number in the item name.
+   - ALWAYS divide the line total by the quantity to get the per-unit price.
+
+2. SUBTOTAL: The pre-tax total. Calculate from items if not explicitly shown.
+
+3. TAX: The tax dollar amount (not a percentage). Set to 0 if not present.
+
+4. TIP: The tip dollar amount (not a percentage). Set to null if not shown on receipt.
+
+5. FLAGGED: List item names or field names (subtotal/tax/tip) that were hard to read or uncertain.
+
+6. All price values must be numbers, not strings.
+
+7. If a price is illegible, use your best estimate and add the item name to "flagged".`;
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',

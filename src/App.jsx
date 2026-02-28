@@ -81,42 +81,6 @@ export default function App() {
     });
   }, []);
 
-  // Expand a bundled item (e.g. "3 Margarita $30") into N equal items
-  const expandItem = useCallback((id, quantity) => {
-    if (quantity < 2) return;
-    setItems(prev => {
-      const item = prev.find(i => i.id === id);
-      if (!item) return prev;
-
-      // Strip leading number from name: "3 Margarita" → "Margarita"
-      const baseName = item.name.replace(/^\d+\s+/, '').trim() || item.name;
-      const priceEach = parseFloat((item.price / quantity).toFixed(2));
-
-      const newItems = Array.from({ length: quantity }, () => ({
-        id: generateId(),
-        name: baseName,
-        price: priceEach,
-        flagged: false,
-      }));
-
-      // Correct any rounding difference on the last item
-      const diff = parseFloat((item.price - newItems.reduce((s, i) => s + i.price, 0)).toFixed(2));
-      if (Math.abs(diff) >= 0.01) {
-        newItems[newItems.length - 1].price = parseFloat(
-          (newItems[newItems.length - 1].price + diff).toFixed(2)
-        );
-      }
-
-      const oldIdx = prev.findIndex(i => i.id === id);
-      return [...prev.slice(0, oldIdx), ...newItems, ...prev.slice(oldIdx + 1)];
-    });
-    setAssignments(prev => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
-  }, []);
-
   const loadReceiptData = useCallback((data) => {
     const loadedItems = data.items.map(item => ({
       id: generateId(),
@@ -177,7 +141,6 @@ export default function App() {
     addItem,
     updateItem,
     removeItem,
-    expandItem,
     onNext: () => navigate('people', 'items'),
     onBack: () => navigate(prevScreen || 'home'),
   };
